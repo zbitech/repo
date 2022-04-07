@@ -1,0 +1,81 @@
+version: "3.8"
+services:
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    environment:
+    - MONGO_INITDB_ROOT_USERNAME=admin
+    - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+    - "./mongo/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d"
+ #   - mongodb-data:/data/db
+#    networks:
+#      - mongodb_network
+    command:
+      - --auth
+    ports:
+    - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo 10.10.10.60:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    environment:
+    - ME_CONFIG_MONGODB_SERVER=mongodb
+    - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+    - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+    - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+    - ME_CONFIG_BASICAUTH_USERNAME=admin
+    - ME_CONFIG_BASICAUTH_PASSWORD=password
+#    volumes:
+#    - "./mongo/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d"
+#    - mongodb-data
+    depends_on:
+    - mongodb
+#    networks:
+#    - mongodb_network
+    ports:
+    - "8081:8081"
+    healthcheck:
+      test:  wget --quiet --tries=3 --spider http://admin:admin123@10.10.10.60:8081 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+  keycloak:
+    image: jboss/keycloak
+    container_name: keycloak
+    environment:
+    - KEYCLOAK_USER=admin
+    - KEYCLOAK_PASSWORD=password
+    - KEYCLOAK_IMPORT=/tmp/zbi-realm.json
+    - DB_ADDR=postgres
+    - DB_USER=keycloak
+    - DB_PASSWORD=password
+    volumes:
+    - "./keycloak/zbi-realm.json:/tmp/zbi-realm.json"
+    ports:
+      - "8181:8080"
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=password
+
+#volumes:
+#  mongodb-data:
+#    name: mongodb-data
+networks:
+  default:
+    name: mongodb_network
+
+
+# Initial Access Token
+# eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlYWY5ODQwYi1hNjQwLTQ4ZGItOTc4Ni00MjM4M2FmNzNiMmQifQ.eyJleHAiOjE2ODA3OTU0NTYsImlhdCI6MTY0OTI1OTQ1NiwianRpIjoiZmI4NjUyMDQtOTQ3OS00MjFhLWFkZDctOGQ0ZjExYjdkNzBmIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MTgxL2F1dGgvcmVhbG1zL3piaS1yZWFsbSIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODE4MS9hdXRoL3JlYWxtcy96YmktcmVhbG0iLCJ0eXAiOiJJbml0aWFsQWNjZXNzVG9rZW4ifQ.1DAczdBCe-coUcsxtElP2WE0Hp8YYu5ZekyKsLMYDY4
+# ID - fb865204-9479-421a-add7-8d4f11b7d70f
