@@ -2,10 +2,8 @@ module github.com/zbitech/repo
 
 go 1.17
 
-replace github.com/zbitech/common v1.0.0 => ../common
-
 require (
-	github.com/zbitech/common v1.0.0
+	github.com/zbitech/common v0.0.0
 	go.mongodb.org/mongo-driver v1.8.4
 )
 
